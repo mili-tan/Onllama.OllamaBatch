@@ -15,13 +15,15 @@ namespace Onllama.OllamaBatch
         {
             var lines = File.ReadLines("1.jsonl");
             var tasks = new List<Task>();
+            var answers = new ConcurrentBag<string>();
+
             foreach (var line in lines)
             {
                 var req = JsonSerializer.Deserialize<Req>(line);
+
                 Console.WriteLine(req.custom_id);
                 req?.body.messages.Insert(0, new Message(ChatRole.System, "/no_think"));
                 var chat = new ChatRequest() { Model = "qwen3:1.7b", Messages = req?.body.messages, Stream = false };
-                var res = new ConcurrentBag<string>();
                 tasks.Add(Task.Run(async () =>
                 {
                     await foreach (var item in client.ChatAsync(chat))
@@ -29,7 +31,7 @@ namespace Onllama.OllamaBatch
                         item.Message.Content = item.Message.Content?.Split("</think>").LastOrDefault()?.Trim();
                         req.body.model = item.Model;
                         req.body.messages.Add(item.Message);
-                        res.Add(JsonSerializer.Serialize(req, new JsonSerializerOptions
+                        answers.Add(JsonSerializer.Serialize(req, new JsonSerializerOptions
                         {
                             Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
                             WriteIndented = false
@@ -38,10 +40,12 @@ namespace Onllama.OllamaBatch
                 }));
 
                 if (tasks.Count < 8) continue;
+
                 Task.WaitAll(tasks.ToArray());
                 tasks.Clear();
-                File.AppendAllLines("2.jsonl", res);
-                res.Clear();
+
+                File.AppendAllLines("2.jsonl", answers);
+                answers.Clear();
             }
         }
 
