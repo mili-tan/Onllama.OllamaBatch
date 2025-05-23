@@ -1,13 +1,14 @@
-﻿using System.Text.Json;
-using OllamaSharp;
+﻿using OllamaSharp;
 using OllamaSharp.Models.Chat;
+using System.Collections.Concurrent;
+using System.Text.Json;
 
 namespace Onllama.OllamaBatch
 {
     internal class Program
     {
         public static HttpClient httpClient = new HttpClient()
-            {BaseAddress = new Uri("http://192.168.31.25:11434"), Timeout = TimeSpan.FromMinutes(10)};
+            {BaseAddress = new Uri("http://xw-gpu:11434"), Timeout = TimeSpan.FromMinutes(10)};
         public static OllamaApiClient client = new OllamaApiClient(httpClient);
 
         static void Main(string[] args)
@@ -20,24 +21,27 @@ namespace Onllama.OllamaBatch
                 Console.WriteLine(req.custom_id);
                 req?.body.messages.Insert(0, new Message(ChatRole.System, "/no_think"));
                 var chat = new ChatRequest() { Model = "qwen3:1.7b", Messages = req?.body.messages, Stream = false };
+                var res = new ConcurrentBag<string>();
                 tasks.Add(Task.Run(async () =>
                 {
                     await foreach (var item in client.ChatAsync(chat))
                     {
+                        item.Message.Content = item.Message.Content?.Split("</think>").LastOrDefault()?.Trim();
                         req.body.model = item.Model;
                         req.body.messages.Add(item.Message);
-                        await File.AppendAllLinesAsync("2.jsonl", [
-                            JsonSerializer.Serialize(req, new JsonSerializerOptions
-                            {
-                                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                                WriteIndented = false
-                            })
-                        ]);
+                        res.Add(JsonSerializer.Serialize(req, new JsonSerializerOptions
+                        {
+                            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                            WriteIndented = false
+                        }));
                     }
                 }));
-                if (tasks.Count < 4) continue;
+
+                if (tasks.Count < 8) continue;
                 Task.WaitAll(tasks.ToArray());
                 tasks.Clear();
+                File.AppendAllLines("2.jsonl", res);
+                res.Clear();
             }
         }
 
@@ -45,7 +49,6 @@ namespace Onllama.OllamaBatch
         {
             public string model { get; set; }
             public List<Message> messages { get; set; }
-            public int max_tokens { get; set; }
         }
 
         public class Req
