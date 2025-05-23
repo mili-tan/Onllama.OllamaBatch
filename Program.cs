@@ -24,8 +24,15 @@ namespace Onllama.OllamaBatch
                 {
                     await foreach (var item in client.ChatAsync(chat))
                     {
+                        req.body.model = item.Model;
                         req.body.messages.Add(item.Message);
-                        await File.AppendAllLinesAsync("2.jsonl",new []{});
+                        await File.AppendAllLinesAsync("2.jsonl", [
+                            JsonSerializer.Serialize(req, new JsonSerializerOptions
+                            {
+                                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                                WriteIndented = false
+                            })
+                        ]);
                     }
                 }));
                 if (tasks.Count < 4) continue;
