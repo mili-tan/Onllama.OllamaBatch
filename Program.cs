@@ -87,12 +87,14 @@ namespace Onllama.OllamaBatch
                         Messages = req?.body.messages, Stream = false, KeepAlive = "-1s", Options = new RequestOptions()
                     };
 
-                    if (req is {temperature: not null}) chat.Options.Temperature = req.temperature;
-                    if (req is {seed: not null }) chat.Options.Seed = req.seed;
-                    if (req is {top_p: not null}) chat.Options.TopP = req.top_p;
-                    if (req is {frequency_penalty: not null}) chat.Options.FrequencyPenalty = req.frequency_penalty;
-                    if (req is {presence_penalty: not null}) chat.Options.PresencePenalty = req.presence_penalty;
-                    if (req is {max_tokens: not null}) chat.Options.NumCtx = req.max_tokens;
+                    if (req is {body.temperature: not null}) chat.Options.Temperature = req.body.temperature;
+                    if (req is {body.seed: not null}) chat.Options.Seed = req.body.seed;
+                    if (req is {body.top_p: not null}) chat.Options.TopP = req.body.top_p;
+                    if (req is {body.max_tokens: not null }) chat.Options.NumCtx = req.body.max_tokens;
+                    if (req is {body.frequency_penalty: not null})
+                        chat.Options.FrequencyPenalty = req.body.frequency_penalty;
+                    if (req is {body.presence_penalty: not null})
+                        chat.Options.PresencePenalty = req.body.presence_penalty;
 
                     tasks.Add(Task.Run(async () =>
                     {
@@ -137,6 +139,12 @@ namespace Onllama.OllamaBatch
         {
             public string? model { get; set; }
             public List<Message> messages { get; set; }
+            public float? temperature { get; set; }
+            public float? top_p { get; set; }
+            public float? frequency_penalty { get; set; }
+            public float? presence_penalty { get; set; }
+            public int? max_tokens { get; set; }
+            public int? seed { get; set; }
         }
 
         public class Req
@@ -144,12 +152,6 @@ namespace Onllama.OllamaBatch
             public string? custom_id { get; set; }
             public string? method { get; set; }
             public string? url { get; set; }
-            public float? temperature { get; set; }
-            public float? top_p { get; set; }
-            public float? frequency_penalty { get; set; }
-            public float? presence_penalty { get; set; }
-            public int? max_tokens { get; set; }
-            public int? seed { get; set; }
             public Body body { get; set; }
         }
     }
