@@ -2,7 +2,6 @@
 using OllamaSharp.Models.Chat;
 using System.Collections.Concurrent;
 using System.Text.Json;
-using OllamaSharp.Models;
 
 namespace Onllama.OllamaBatch
 {
@@ -12,29 +11,42 @@ namespace Onllama.OllamaBatch
             {BaseAddress = new Uri("http://xw-gpu:11434"), Timeout = TimeSpan.FromMinutes(5)};
         public static OllamaApiClient client = new OllamaApiClient(httpClient);
 
+        public static string InputFile = "input.jsonl";
+        public static string OutputFile = "input.jsonl";
+        public static string ModelName = string.Empty;
+        public static int Skip = 0;
+        public static bool NoThink = false;
+        public static bool TrimThink = false;
+
         static void Main(string[] args)
         {
-            var lines = File.ReadLines("1.jsonl");
+            var lines = File.ReadLines(InputFile);
             var tasks = new List<Task>();
             var answers = new ConcurrentBag<string>();
 
             foreach (var line in lines)
             {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
                 var req = JsonSerializer.Deserialize<Req>(line);
+                Console.WriteLine("Q:" + req?.custom_id);
+                if (req is {custom_id: not null} && long.Parse(req.custom_id.Split('-').Last()) <= Skip) continue;
+                
+                if (NoThink) req?.body.messages.Insert(0, new Message(ChatRole.System, "/no_think"));
 
-                Console.WriteLine("Q:" + req.custom_id);
-
-                if (long.Parse(req.custom_id.Split('-').Last()) <= 20293) continue;
-                //req?.body.messages.Insert(0, new Message(ChatRole.System, "/no_think"));
                 var chat = new ChatRequest()
-                    {Model = "hf-mirror.com/unsloth/GLM-4-9B-0414-GGUF:Q4_K_M", Messages = req?.body.messages, Stream = false, KeepAlive = "-1s"};
+                {
+                    Model = (string.IsNullOrWhiteSpace(ModelName) ? req.body.model : ModelName) ?? "",
+                    Messages = req?.body.messages, Stream = false, KeepAlive = "-1s"
+                };
                 tasks.Add(Task.Run(async () =>
                 {
                     try
                     {
                         await foreach (var item in client.ChatAsync(chat))
                         {
-                            //item.Message.Content = item.Message.Content?.Split("</think>").LastOrDefault()?.Trim();
+                            if (TrimThink) item.Message.Content = item.Message.Content?.Split("</think>").LastOrDefault()?.Trim();
+
                             req.body.model = item.Model;
                             req.body.messages.Add(item.Message);
                             answers.Add(JsonSerializer.Serialize(req, new JsonSerializerOptions
@@ -56,22 +68,22 @@ namespace Onllama.OllamaBatch
                 Task.WaitAll(tasks.ToArray());
                 tasks.Clear();
 
-                File.AppendAllLines("2.jsonl", answers);
+                File.AppendAllLines(OutputFile, answers);
                 answers.Clear();
             }
         }
 
         public class Body
         {
-            public string model { get; set; }
+            public string? model { get; set; }
             public List<Message> messages { get; set; }
         }
 
         public class Req
         {
-            public string custom_id { get; set; }
-            public string method { get; set; }
-            public string url { get; set; }
+            public string? custom_id { get; set; }
+            public string? method { get; set; }
+            public string? url { get; set; }
             public Body body { get; set; }
         }
     }
