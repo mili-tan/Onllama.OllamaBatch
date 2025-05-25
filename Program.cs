@@ -88,7 +88,7 @@ namespace Onllama.OllamaBatch
                     };
 
                     if (req is {temperature: not null}) chat.Options.Temperature = req.temperature;
-                    if (req is { seed: not null }) chat.Options.Seed = req.seed;
+                    if (req is {seed: not null }) chat.Options.Seed = req.seed;
                     if (req is {top_p: not null}) chat.Options.TopP = req.top_p;
                     if (req is {frequency_penalty: not null}) chat.Options.FrequencyPenalty = req.frequency_penalty;
                     if (req is {presence_penalty: not null}) chat.Options.PresencePenalty = req.presence_penalty;
