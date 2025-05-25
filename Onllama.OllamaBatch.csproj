@@ -7,14 +7,20 @@
     <Nullable>enable</Nullable>
     
     <PublishSingleFile>true</PublishSingleFile>
-    <PublishTrimmed>true</PublishTrimmed>
+    <!--<PublishTrimmed>true</PublishTrimmed>-->
     <StripSymbols>true</StripSymbols>
-    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <!--<JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>-->
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
     <PackageReference Include="OllamaSharp" Version="5.1.19" />
   </ItemGroup>
+
+  <!--<ItemGroup>
+    <RdXmlFile Include="./rd.xml" />
+    <TrimmerRootAssembly Include="McMaster.Extensions.CommandLineUtils" />
+    <TrimmerRootAssembly Include="OllamaSharp" />
+  </ItemGroup>-->
 
 </Project>
