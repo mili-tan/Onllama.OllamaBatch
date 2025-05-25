@@ -1,9 +1,10 @@
-﻿using OllamaSharp;
+﻿using McMaster.Extensions.CommandLineUtils;
+using OllamaSharp;
+using OllamaSharp.Models;
 using OllamaSharp.Models.Chat;
 using System.Collections.Concurrent;
 using System.Text.Json;
-using McMaster.Extensions.CommandLineUtils;
-using OllamaSharp.Models;
+using System.Text.Json.Serialization;
 
 namespace Onllama.OllamaBatch
 {
@@ -17,6 +18,7 @@ namespace Onllama.OllamaBatch
         public static string OutputFile = "output.jsonl";
         public static string ModelName = string.Empty;
         public static int Skip = 0;
+        public static int MaxParallel = 8;
         public static bool NoThink = false;
         public static bool TrimThink = false;
 
@@ -57,6 +59,9 @@ namespace Onllama.OllamaBatch
             var timeOutOption = cmd.Option<int>("--timeout <minutes>",
                 isZh ? "设置超时时间（分钟）。" : "Set timeout minutes",
                 CommandOptionType.SingleValue);
+            var maxParallelOption = cmd.Option<int>("--max-parallel <number>",
+                isZh ? "最大并行请求数。" : "Set max parallel requests",
+                CommandOptionType.SingleValue);
 
             cmd.OnExecute(() =>
             {
@@ -68,6 +73,7 @@ namespace Onllama.OllamaBatch
                 if (trimThinkOption.HasValue()) TrimThink = trimThinkOption.ParsedValue;
                 if (urlOption.HasValue()) httpClient.BaseAddress = new Uri(urlOption.ParsedValue);
                 if (timeOutOption.HasValue()) httpClient.Timeout = TimeSpan.FromMinutes(timeOutOption.ParsedValue);
+                if (maxParallelOption.HasValue()) MaxParallel = maxParallelOption.ParsedValue;
 
                 var lines = File.ReadLines(InputFile);
                 var tasks = new List<Task>();
@@ -80,10 +86,11 @@ namespace Onllama.OllamaBatch
                     Console.WriteLine("Q:" + req?.custom_id);
                     if (req is {custom_id: not null} && long.Parse(req.custom_id.Split('-').Last()) <= Skip) continue;
                     if (NoThink) req?.body.messages.Insert(0, new Message(ChatRole.System, "/no_think"));
+                    if (!string.IsNullOrWhiteSpace(ModelName)) req.body.model = ModelName;
 
                     var chat = new ChatRequest()
                     {
-                        Model = (string.IsNullOrWhiteSpace(ModelName) ? req.body.model : ModelName) ?? "",
+                        Model = req?.body.model ?? "",
                         Messages = req?.body.messages, Stream = false, KeepAlive = "-1s", Options = new RequestOptions()
                     };
 
@@ -100,13 +107,36 @@ namespace Onllama.OllamaBatch
                     {
                         try
                         {
+                            //using var httpClient = new HttpClient();
+                            //using var request = new HttpRequestMessage(new HttpMethod("POST"), "https://www.sophnet.com/api/open-apis/v1/chat/completions");
+                            //request.Headers.TryAddWithoutValidation("Authorization", "Bearer ");
+                            //request.Content = new StringContent(JsonSerializer.Serialize(req.body));
+                            //request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
+                            //var response = await httpClient.SendAsync(request);
+                            //if (response.IsSuccessStatusCode)
+                            //{
+                            //    var jObj = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+                            //    req.body.messages.Add(new Message(ChatRole.Assistant, jObj?["choices"]?[0]?["message"]?["content"]?.ToString()));
+
+                            //    answers.Add(JsonSerializer.Serialize(req, new JsonSerializerOptions
+                            //    {
+                            //        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                            //        WriteIndented = false
+                            //    }));
+                            //    Console.WriteLine("R:" + req.custom_id);
+                            //}
+                            //else
+                            //{
+                            //    Console.WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+                            //}
+
+
                             await foreach (var item in client.ChatAsync(chat))
                             {
                                 if (TrimThink)
                                     item.Message.Content =
                                         item.Message.Content?.Split("</think>").LastOrDefault()?.Trim();
 
-                                req.body.model = item.Model;
                                 req.body.messages.Add(item.Message);
                                 answers.Add(JsonSerializer.Serialize(req, new JsonSerializerOptions
                                 {
@@ -122,7 +152,7 @@ namespace Onllama.OllamaBatch
                         }
                     }));
 
-                    if (tasks.Count < 12) continue;
+                    if (tasks.Count < MaxParallel) continue;
 
                     Task.WaitAll(tasks.ToArray());
                     tasks.Clear();
@@ -139,11 +169,23 @@ namespace Onllama.OllamaBatch
         {
             public string? model { get; set; }
             public List<Message> messages { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public float? temperature { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public float? top_p { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public float? frequency_penalty { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public float? presence_penalty { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public int? max_tokens { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public int? seed { get; set; }
         }
 
