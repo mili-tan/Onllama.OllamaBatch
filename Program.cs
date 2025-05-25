@@ -3,6 +3,7 @@ using OllamaSharp.Models.Chat;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using McMaster.Extensions.CommandLineUtils;
+using OllamaSharp.Models;
 
 namespace Onllama.OllamaBatch
 {
@@ -75,18 +76,24 @@ namespace Onllama.OllamaBatch
                 foreach (var line in lines)
                 {
                     if (string.IsNullOrWhiteSpace(line)) continue;
-
                     var req = JsonSerializer.Deserialize<Req>(line);
                     Console.WriteLine("Q:" + req?.custom_id);
                     if (req is {custom_id: not null} && long.Parse(req.custom_id.Split('-').Last()) <= Skip) continue;
-
                     if (NoThink) req?.body.messages.Insert(0, new Message(ChatRole.System, "/no_think"));
 
                     var chat = new ChatRequest()
                     {
                         Model = (string.IsNullOrWhiteSpace(ModelName) ? req.body.model : ModelName) ?? "",
-                        Messages = req?.body.messages, Stream = false, KeepAlive = "-1s"
+                        Messages = req?.body.messages, Stream = false, KeepAlive = "-1s", Options = new RequestOptions()
                     };
+
+                    if (req is {temperature: not null}) chat.Options.Temperature = req.temperature;
+                    if (req is { seed: not null }) chat.Options.Seed = req.seed;
+                    if (req is {top_p: not null}) chat.Options.TopP = req.top_p;
+                    if (req is {frequency_penalty: not null}) chat.Options.FrequencyPenalty = req.frequency_penalty;
+                    if (req is {presence_penalty: not null}) chat.Options.PresencePenalty = req.presence_penalty;
+                    if (req is {max_tokens: not null}) chat.Options.NumCtx = req.max_tokens;
+
                     tasks.Add(Task.Run(async () =>
                     {
                         try
@@ -137,6 +144,12 @@ namespace Onllama.OllamaBatch
             public string? custom_id { get; set; }
             public string? method { get; set; }
             public string? url { get; set; }
+            public float? temperature { get; set; }
+            public float? top_p { get; set; }
+            public float? frequency_penalty { get; set; }
+            public float? presence_penalty { get; set; }
+            public int? max_tokens { get; set; }
+            public int? seed { get; set; }
             public Body body { get; set; }
         }
     }
