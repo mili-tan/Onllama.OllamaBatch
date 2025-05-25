@@ -53,6 +53,9 @@ namespace Onllama.OllamaBatch
             var urlOption = cmd.Option<string>("-u|--uurl <URL>",
                 isZh ? "Ollama 服务端点。[http://127.0.0.1:11434]" : "Set ollama service URL [http://127.0.0.1:11434]",
                 CommandOptionType.SingleValue);
+            var timeOutOption = cmd.Option<int>("--timeout <minutes>",
+                isZh ? "设置超时时间（分钟）。" : "Set timeout minutes",
+                CommandOptionType.SingleValue);
 
             cmd.OnExecute(() =>
             {
@@ -63,6 +66,7 @@ namespace Onllama.OllamaBatch
                 if (noThinkOption.HasValue()) NoThink = noThinkOption.ParsedValue;
                 if (trimThinkOption.HasValue()) TrimThink = trimThinkOption.ParsedValue;
                 if (urlOption.HasValue()) httpClient.BaseAddress = new Uri(urlOption.ParsedValue);
+                if (timeOutOption.HasValue()) httpClient.Timeout = TimeSpan.FromMinutes(timeOutOption.ParsedValue);
 
                 var lines = File.ReadLines(InputFile);
                 var tasks = new List<Task>();
