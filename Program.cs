@@ -16,9 +16,13 @@ namespace Onllama.OllamaBatch
             {BaseAddress = new Uri("http://127.0.0.1:11434"), Timeout = TimeSpan.FromMinutes(5)};
         public static OllamaApiClient client = new OllamaApiClient(httpClient);
 
+        public static string OaiStyleUrl = "https://api.deepseek.com/v1/chat/completions";
+        public static string OaiStyleSK = "sk-";
+        public static bool UseOaiStyle = false;
+
+        public static string ModelName = string.Empty;
         public static string InputFile = "input.jsonl";
         public static string OutputFile = "output.jsonl";
-        public static string ModelName = string.Empty;
         public static int Skip = 0;
         public static int MaxParallel = 8;
         public static int WaitTime = 0;
@@ -141,43 +145,47 @@ namespace Onllama.OllamaBatch
                     {
                         try
                         {
-                            //using var httpClient = new HttpClient() {Timeout = TimeSpan.FromMinutes(5)};
-                            //using var request = new HttpRequestMessage(new HttpMethod("POST"), "https://api.minimax.chat/v1/text/chatcompletion_v2?GroupId=");
-                            //request.Headers.TryAddWithoutValidation("Authorization", "Bearer");
-                            //request.Content = new StringContent(JsonSerializer.Serialize(req.body));
-                            //request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
-                            //var response = await httpClient.SendAsync(request);
-                            //if (response.IsSuccessStatusCode)
-                            //{
-                            //    var jObj = JsonNode.Parse((await response.Content.ReadAsStringAsync()).Trim());
-                            //    req.body.messages.Add(new Message(ChatRole.Assistant, jObj?["choices"]?[0]?["message"]?["content"]?.ToString()));
-
-                            //    answers.Add(JsonSerializer.Serialize(req, new JsonSerializerOptions
-                            //    {
-                            //        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                            //        WriteIndented = false
-                            //    }));
-                            //    Console.WriteLine("R:" + req.custom_id);
-                            //}
-                            //else
-                            //{
-                            //    Console.WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
-                            //}
-
-
-                            await foreach (var item in client.ChatAsync(chat))
+                            if (UseOaiStyle)
                             {
-                                if (TrimThink)
-                                    item.Message.Content =
-                                        item.Message.Content?.Split("</think>").LastOrDefault()?.Trim();
-
-                                req.body.messages.Add(item.Message);
-                                answers.Add(JsonSerializer.Serialize(req, new JsonSerializerOptions
+                                using var httpClient = new HttpClient() { Timeout = TimeSpan.FromMinutes(5) };
+                                using var request = new HttpRequestMessage(new HttpMethod("POST"), OaiStyleUrl);
+                                request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + OaiStyleSK);
+                                request.Content = new StringContent(JsonSerializer.Serialize(req.body));
+                                request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
+                                var response = await httpClient.SendAsync(request);
+                                if (response.IsSuccessStatusCode)
                                 {
-                                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                                    WriteIndented = false
-                                }));
-                                Console.WriteLine("R:" + req.custom_id);
+                                    var jObj = JsonNode.Parse((await response.Content.ReadAsStringAsync()).Trim());
+                                    req.body.messages.Add(new Message(ChatRole.Assistant, jObj?["choices"]?[0]?["message"]?["content"]?.ToString()));
+
+                                    answers.Add(JsonSerializer.Serialize(req, new JsonSerializerOptions
+                                    {
+                                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                                        WriteIndented = false
+                                    }));
+                                    Console.WriteLine("R:" + req.custom_id);
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+                                }
+                            }
+                            else
+                            {
+                                await foreach (var item in client.ChatAsync(chat))
+                                {
+                                    if (TrimThink)
+                                        item.Message.Content =
+                                            item.Message.Content?.Split("</think>").LastOrDefault()?.Trim();
+
+                                    req.body.messages.Add(item.Message);
+                                    answers.Add(JsonSerializer.Serialize(req, new JsonSerializerOptions
+                                    {
+                                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                                        WriteIndented = false
+                                    }));
+                                    Console.WriteLine("R:" + req.custom_id);
+                                }
                             }
                         }
                         catch (Exception e)
