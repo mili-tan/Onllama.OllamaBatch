@@ -3,7 +3,9 @@ using OllamaSharp;
 using OllamaSharp.Models;
 using OllamaSharp.Models.Chat;
 using System.Collections.Concurrent;
+using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace Onllama.OllamaBatch
@@ -19,11 +21,33 @@ namespace Onllama.OllamaBatch
         public static string ModelName = string.Empty;
         public static int Skip = 0;
         public static int MaxParallel = 8;
+        public static int WaitTime = 0;
         public static bool NoThink = false;
         public static bool TrimThink = false;
 
         static void Main(string[] args)
         {
+
+            //var from = 165000;
+            //var to = 166500;
+            //var now = 0;
+            //foreach (var readLine in File.ReadLines(InputFile))
+            //{
+            //    now++;
+
+            //    if (now <= from)
+            //    {
+            //        continue;
+            //    }
+            //    if (now >= to)
+            //    {
+            //        break;
+            //    }
+
+            //    File.AppendAllText(to + ".jsonl", readLine + Environment.NewLine);
+            //}
+            //return;
+
             var isZh = Thread.CurrentThread.CurrentCulture.Name.Contains("zh");
 
             var cmd = new CommandLineApplication
@@ -62,6 +86,9 @@ namespace Onllama.OllamaBatch
             var maxParallelOption = cmd.Option<int>("--max-parallel <number>",
                 isZh ? "最大并行请求数。" : "Set max parallel requests",
                 CommandOptionType.SingleValue);
+            var waitTimeOption = cmd.Option<int>("--wait-time <milliseconds>",
+                isZh ? "每批次请求之间的等待时间（毫秒）。" : "Set wait time between batch requests (milliseconds)",
+                CommandOptionType.SingleValue);
 
             cmd.OnExecute(() =>
             {
@@ -74,6 +101,7 @@ namespace Onllama.OllamaBatch
                 if (urlOption.HasValue()) httpClient.BaseAddress = new Uri(urlOption.ParsedValue);
                 if (timeOutOption.HasValue()) httpClient.Timeout = TimeSpan.FromMinutes(timeOutOption.ParsedValue);
                 if (maxParallelOption.HasValue()) MaxParallel = maxParallelOption.ParsedValue;
+                if (waitTimeOption.HasValue()) WaitTime = waitTimeOption.ParsedValue;
 
                 var lines = File.ReadLines(InputFile);
                 var tasks = new List<Task>();
@@ -81,6 +109,12 @@ namespace Onllama.OllamaBatch
 
                 foreach (var line in lines)
                 {
+                    //if (DateTime.Now.Hour == 8)
+                    //{
+                    //    File.WriteAllText("stop-at.txt", line);
+                    //    Environment.Exit(0);
+                    //}
+
                     if (string.IsNullOrWhiteSpace(line)) continue;
                     var req = JsonSerializer.Deserialize<Req>(line);
                     Console.WriteLine("Q:" + req?.custom_id);
@@ -107,15 +141,15 @@ namespace Onllama.OllamaBatch
                     {
                         try
                         {
-                            //using var httpClient = new HttpClient();
-                            //using var request = new HttpRequestMessage(new HttpMethod("POST"), "https://www.sophnet.com/api/open-apis/v1/chat/completions");
-                            //request.Headers.TryAddWithoutValidation("Authorization", "Bearer ");
+                            //using var httpClient = new HttpClient() {Timeout = TimeSpan.FromMinutes(5)};
+                            //using var request = new HttpRequestMessage(new HttpMethod("POST"), "https://api.minimax.chat/v1/text/chatcompletion_v2?GroupId=");
+                            //request.Headers.TryAddWithoutValidation("Authorization", "Bearer");
                             //request.Content = new StringContent(JsonSerializer.Serialize(req.body));
                             //request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
                             //var response = await httpClient.SendAsync(request);
                             //if (response.IsSuccessStatusCode)
                             //{
-                            //    var jObj = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+                            //    var jObj = JsonNode.Parse((await response.Content.ReadAsStringAsync()).Trim());
                             //    req.body.messages.Add(new Message(ChatRole.Assistant, jObj?["choices"]?[0]?["message"]?["content"]?.ToString()));
 
                             //    answers.Add(JsonSerializer.Serialize(req, new JsonSerializerOptions
@@ -154,6 +188,7 @@ namespace Onllama.OllamaBatch
 
                     if (tasks.Count < MaxParallel) continue;
 
+                    Thread.Sleep(WaitTime);
                     Task.WaitAll(tasks.ToArray());
                     tasks.Clear();
 
