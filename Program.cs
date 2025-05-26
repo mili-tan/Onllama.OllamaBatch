@@ -93,6 +93,15 @@ namespace Onllama.OllamaBatch
             var waitTimeOption = cmd.Option<int>("--wait-time <milliseconds>",
                 isZh ? "每批次请求之间的等待时间（毫秒）。" : "Set wait time between batch requests (milliseconds)",
                 CommandOptionType.SingleValue);
+            var useUseOaiStyleOption = cmd.Option<bool>("--use-oai-style",
+                isZh ? "使用 OpenAI 风格的 API 调用。" : "Use OpenAI style API call",
+                CommandOptionType.NoValue);
+            var oaiStyleUrlOption = cmd.Option<string>("--oai-style-url <url>",
+                isZh ? "OpenAI 风格的 API URL。" : "Set OpenAI style API URL",
+                CommandOptionType.SingleValue);
+            var oaiStyleSkOption = cmd.Option<string>("--oai-style-sk <sk>",
+                isZh ? "OpenAI 风格的 API 密钥。" : "Set OpenAI style API Key",
+                CommandOptionType.SingleValue);
 
             cmd.OnExecute(() =>
             {
@@ -106,6 +115,10 @@ namespace Onllama.OllamaBatch
                 if (timeOutOption.HasValue()) httpClient.Timeout = TimeSpan.FromMinutes(timeOutOption.ParsedValue);
                 if (maxParallelOption.HasValue()) MaxParallel = maxParallelOption.ParsedValue;
                 if (waitTimeOption.HasValue()) WaitTime = waitTimeOption.ParsedValue;
+
+                if (useUseOaiStyleOption.HasValue()) UseOaiStyle = useUseOaiStyleOption.ParsedValue;
+                if (oaiStyleUrlOption.HasValue()) OaiStyleUrl = oaiStyleUrlOption.ParsedValue;
+                if (oaiStyleSkOption.HasValue()) OaiStyleSK = oaiStyleSkOption.ParsedValue;
 
                 var lines = File.ReadLines(InputFile);
                 var tasks = new List<Task>();
