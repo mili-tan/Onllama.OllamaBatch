@@ -90,8 +90,8 @@ namespace Onllama.OllamaBatch
             var maxParallelOption = cmd.Option<int>("--max-parallel <number>",
                 isZh ? "最大并行请求数。" : "Set max parallel requests",
                 CommandOptionType.SingleValue);
-            var waitTimeOption = cmd.Option<int>("--wait-time <milliseconds>",
-                isZh ? "每批次请求之间的等待时间（毫秒）。" : "Set wait time between batch requests (milliseconds)",
+            var waitTimeOption = cmd.Option<int>("--wait-time <seconds>",
+                isZh ? "每批次请求之间的等待时间（秒）。" : "Set wait time between batch requests (seconds)",
                 CommandOptionType.SingleValue);
             var useUseOaiStyleOption = cmd.Option<bool>("--use-oai-style",
                 isZh ? "使用 OpenAI 风格的 API 调用。" : "Use OpenAI style API call",
@@ -209,7 +209,7 @@ namespace Onllama.OllamaBatch
 
                     if (tasks.Count < MaxParallel) continue;
 
-                    Thread.Sleep(WaitTime);
+                    Thread.Sleep(WaitTime == 0 ? 0 : WaitTime * 1000);
                     Task.WaitAll(tasks.ToArray());
                     tasks.Clear();
 
