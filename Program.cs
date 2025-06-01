@@ -173,10 +173,11 @@ namespace Onllama.OllamaBatch
 
                                     if (UseOaiStyleOutput)
                                     {
-                                        req.body.choices = new List<Choice>();
+                                        req.response = new Res();
+                                        req.response.body.choices = new List<Choice>();
                                         foreach (var choice in jObj?["choices"]?.AsArray() ?? [])
                                         {
-                                            req.body.choices.Add(new Choice
+                                            req.response.body.choices.Add(new Choice
                                             {
                                                 message = new Message(ChatRole.Assistant, choice?["message"]?["content"]?.ToString()),
                                                 finish_reason = choice?["finish_reason"]?.ToString(),
@@ -208,12 +209,25 @@ namespace Onllama.OllamaBatch
                                         item.Message.Content =
                                             item.Message.Content?.Split("</think>").LastOrDefault()?.Trim();
 
-                                    req.body.messages.Add(item.Message);
-                                    answers.Add(JsonSerializer.Serialize(req, new JsonSerializerOptions
+                                    if (UseOaiStyleOutput && item is ChatDoneResponseStream done)
                                     {
-                                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                                        WriteIndented = false
-                                    }));
+                                        req.response = new Res();
+                                        req.response.body.choices = [
+                                            new Choice
+                                            {
+                                                message = done.Message,
+                                                finish_reason = done.DoneReason
+                                            }
+                                        ];
+                                    }
+                                    else req.body.messages.Add(item.Message);
+
+
+                                    answers.Add(JsonSerializer.Serialize(req, new JsonSerializerOptions
+                                        {
+                                            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                                            WriteIndented = false
+                                        }));
                                     Console.WriteLine("R:" + req.custom_id);
                                 }
                             }
@@ -280,6 +294,9 @@ namespace Onllama.OllamaBatch
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public Body body { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public int status_code = 200;
         }
 
         public class Choice
