@@ -18,7 +18,8 @@ namespace Onllama.OllamaBatch
 
         public static string OaiStyleUrl = "https://api.deepseek.com/v1/chat/completions";
         public static string OaiStyleSK = "sk-";
-        public static bool UseOaiStyle = false;
+        public static bool UseOaiStyleApi = false;
+        public static bool UseOaiStyleOutput = false;
 
         public static string ModelName = string.Empty;
         public static string InputFile = "input.jsonl";
@@ -116,7 +117,7 @@ namespace Onllama.OllamaBatch
                 if (maxParallelOption.HasValue()) MaxParallel = maxParallelOption.ParsedValue;
                 if (waitTimeOption.HasValue()) WaitTime = waitTimeOption.ParsedValue;
 
-                if (useUseOaiStyleOption.HasValue()) UseOaiStyle = useUseOaiStyleOption.ParsedValue;
+                if (useUseOaiStyleOption.HasValue()) UseOaiStyleApi = useUseOaiStyleOption.ParsedValue;
                 if (oaiStyleUrlOption.HasValue()) OaiStyleUrl = oaiStyleUrlOption.ParsedValue;
                 if (oaiStyleSkOption.HasValue()) OaiStyleSK = oaiStyleSkOption.ParsedValue;
 
@@ -158,7 +159,7 @@ namespace Onllama.OllamaBatch
                     {
                         try
                         {
-                            if (UseOaiStyle)
+                            if (UseOaiStyleApi)
                             {
                                 using var httpClient = new HttpClient() { Timeout = TimeSpan.FromMinutes(5) };
                                 using var request = new HttpRequestMessage(new HttpMethod("POST"), OaiStyleUrl);
@@ -169,13 +170,29 @@ namespace Onllama.OllamaBatch
                                 if (response.IsSuccessStatusCode)
                                 {
                                     var jObj = JsonNode.Parse((await response.Content.ReadAsStringAsync()).Trim());
-                                    req.body.messages.Add(new Message(ChatRole.Assistant, jObj?["choices"]?[0]?["message"]?["content"]?.ToString()));
+
+                                    if (UseOaiStyleOutput)
+                                    {
+                                        req.body.choices = new List<Choice>();
+                                        foreach (var choice in jObj?["choices"]?.AsArray() ?? [])
+                                        {
+                                            req.body.choices.Add(new Choice
+                                            {
+                                                message = new Message(ChatRole.Assistant, choice?["message"]?["content"]?.ToString()),
+                                                finish_reason = choice?["finish_reason"]?.ToString(),
+                                                index = choice?["index"]?.GetValue<int>() ?? 0
+                                            });
+                                        }
+                                    }
+                                    else
+                                        req.body.messages.Add(new Message(ChatRole.Assistant,
+                                            jObj?["choices"]?[0]?["message"]?["content"]?.ToString()));
 
                                     answers.Add(JsonSerializer.Serialize(req, new JsonSerializerOptions
-                                    {
-                                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                                        WriteIndented = false
-                                    }));
+                                        {
+                                            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                                            WriteIndented = false
+                                        }));
                                     Console.WriteLine("R:" + req.custom_id);
                                 }
                                 else
@@ -243,6 +260,9 @@ namespace Onllama.OllamaBatch
 
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public int? seed { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public List<Choice> choices { get; set; }
         }
 
         public class Req
@@ -251,6 +271,22 @@ namespace Onllama.OllamaBatch
             public string? method { get; set; }
             public string? url { get; set; }
             public Body body { get; set; }
+            
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public Res? response { get; set; }
+        }
+
+        public class Res
+        {
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public Body body { get; set; }
+        }
+
+        public class Choice
+        {
+            public Message message { get; set; }
+            public string? finish_reason { get; set; } = "stop";
+            public int? index { get; set; } = 0;
         }
     }
 }
