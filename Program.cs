@@ -82,7 +82,7 @@ namespace Onllama.OllamaBatch
             var trimThinkOption = cmd.Option<bool>("-t|--trim-think",
                 isZh ? "修剪思考过程 (<think>)。" : "Set trim <think>",
                 CommandOptionType.NoValue);
-            var urlOption = cmd.Option<string>("-u|--uurl <URL>",
+            var urlOption = cmd.Option<string>("-u|--url <URL>",
                 isZh ? "Ollama 服务端点。[http://127.0.0.1:11434]" : "Set ollama service URL [http://127.0.0.1:11434]",
                 CommandOptionType.SingleValue);
             var timeOutOption = cmd.Option<int>("--timeout <minutes>",
@@ -94,15 +94,18 @@ namespace Onllama.OllamaBatch
             var waitTimeOption = cmd.Option<int>("--wait-time <seconds>",
                 isZh ? "每批次请求之间的等待时间（秒）。" : "Set wait time between batch requests (seconds)",
                 CommandOptionType.SingleValue);
-            var useUseOaiStyleOption = cmd.Option<bool>("--use-oai-style",
+            var useUseOaiStyleOption = cmd.Option<bool>("-o|--use-oai",
                 isZh ? "使用 OpenAI 风格的 API 调用。" : "Use OpenAI style API call",
                 CommandOptionType.NoValue);
-            var oaiStyleUrlOption = cmd.Option<string>("--oai-style-url <url>",
+            var oaiStyleUrlOption = cmd.Option<string>("-ou|--oai-url <url>",
                 isZh ? "OpenAI 风格的 API URL。" : "Set OpenAI style API URL",
                 CommandOptionType.SingleValue);
-            var oaiStyleSkOption = cmd.Option<string>("--oai-style-sk <sk>",
+            var oaiStyleSkOption = cmd.Option<string>("-ok|--oai-sk <sk>",
                 isZh ? "OpenAI 风格的 API 密钥。" : "Set OpenAI style API Key",
                 CommandOptionType.SingleValue);
+            var useOaiStyleOutputOption = cmd.Option<bool>("-oo|--oai-output",
+                isZh ? "使用 OpenAI 风格的输出格式。" : "Use OpenAI style output format",
+                CommandOptionType.NoValue);
 
             cmd.OnExecute(() =>
             {
@@ -120,6 +123,7 @@ namespace Onllama.OllamaBatch
                 if (useUseOaiStyleOption.HasValue()) UseOaiStyleApi = useUseOaiStyleOption.ParsedValue;
                 if (oaiStyleUrlOption.HasValue()) OaiStyleUrl = oaiStyleUrlOption.ParsedValue;
                 if (oaiStyleSkOption.HasValue()) OaiStyleSK = oaiStyleSkOption.ParsedValue;
+                if (useOaiStyleOutputOption.HasValue()) UseOaiStyleOutput = useOaiStyleOutputOption.ParsedValue;
 
                 var lines = File.ReadLines(InputFile);
                 var tasks = new List<Task>();
