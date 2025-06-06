@@ -13,7 +13,7 @@ namespace Onllama.OllamaBatch
     internal class Program
     {
         public static HttpClient httpClient = new HttpClient()
-            {BaseAddress = new Uri("http://127.0.0.1:11434"), Timeout = TimeSpan.FromMinutes(5)};
+            {BaseAddress = new Uri("http://127.0.0.1:11434"), Timeout = TimeSpan.FromMinutes(3)};
         public static OllamaApiClient client = new OllamaApiClient(httpClient);
 
         public static string OaiStyleUrl = "https://api.deepseek.com/v1/chat/completions";
@@ -65,10 +65,10 @@ namespace Onllama.OllamaBatch
             cmd.HelpOption("-?|-h|--help|-he");
 
             var inputOption = cmd.Option<string>("-i|--input <path>",
-                isZh ? "输入 Jsonl 路径。" : "Set input Jsonl path",
+                (isZh ? "输入 Jsonl 路径。" : "Set input Jsonl path") + " (input.jsonl)",
                 CommandOptionType.SingleValue);
             var outputOption = cmd.Option<string>("-o|--output <path>",
-                isZh ? "输出 Jsonl 路径。" : "Set output Jsonl path",
+                (isZh ? "输出 Jsonl 路径。" : "Set output Jsonl path") + " (output.jsonl)",
                 CommandOptionType.SingleValue);
             var modelOption = cmd.Option<string>("-m|--model <name>",
                 isZh ? "覆盖模型名称。" : "Set overwrite model name",
@@ -94,7 +94,7 @@ namespace Onllama.OllamaBatch
             var waitTimeOption = cmd.Option<int>("--wait-time <seconds>",
                 isZh ? "每批次请求之间的等待时间（秒）。" : "Set wait time between batch requests (seconds)",
                 CommandOptionType.SingleValue);
-            var useUseOaiStyleOption = cmd.Option<bool>("-o|--use-oai",
+            var useUseOaiStyleOption = cmd.Option<bool>("-oai|--use-oai",
                 isZh ? "使用 OpenAI 风格的 API 调用。" : "Use OpenAI style API call",
                 CommandOptionType.NoValue);
             var oaiStyleUrlOption = cmd.Option<string>("-ou|--oai-url <url>",
