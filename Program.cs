@@ -107,6 +107,9 @@ namespace Onllama.OllamaBatch
             var useOaiStyleOutputOption = cmd.Option<bool>("-oo|--oai-output",
                 isZh ? "使用 OpenAI 风格的输出格式。" : "Use OpenAI style output format",
                 CommandOptionType.NoValue);
+            var waitAllOption = cmd.Option<bool>("-wa|--wait-all",
+                isZh ? "等待所有完成再请求下一批次。" : "Wait for complete before the next batch",
+                CommandOptionType.NoValue);
 
             cmd.OnExecute(() =>
             {
@@ -125,6 +128,7 @@ namespace Onllama.OllamaBatch
                 if (oaiStyleUrlOption.HasValue()) OaiStyleUrl = oaiStyleUrlOption.ParsedValue;
                 if (oaiStyleSkOption.HasValue()) OaiStyleSK = oaiStyleSkOption.ParsedValue;
                 if (useOaiStyleOutputOption.HasValue()) UseOaiStyleOutput = useOaiStyleOutputOption.ParsedValue;
+                if (waitAllOption.HasValue()) WaitAll = waitAllOption.ParsedValue;
 
                 var lines = File.ReadLines(InputFile);
                 var tasks = new List<Task>();
