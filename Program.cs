@@ -29,6 +29,7 @@ namespace Onllama.OllamaBatch
         public static int WaitTime = 0;
         public static bool NoThink = false;
         public static bool TrimThink = false;
+        public static bool WaitAll = false;
 
         static void Main(string[] args)
         {
@@ -98,7 +99,7 @@ namespace Onllama.OllamaBatch
                 isZh ? "使用 OpenAI 风格的 API 调用。" : "Use OpenAI style API call",
                 CommandOptionType.NoValue);
             var oaiStyleUrlOption = cmd.Option<string>("-ou|--oai-url <url>",
-                isZh ? "OpenAI 风格的 API URL。" : "Set OpenAI style API URL",
+                isZh ? "OpenAI 风格的 API URL。" : "Set OpenAI style API URL [https://example.com/v1/chat/completions]",
                 CommandOptionType.SingleValue);
             var oaiStyleSkOption = cmd.Option<string>("-ok|--oai-sk <sk>",
                 isZh ? "OpenAI 风格的 API 密钥。" : "Set OpenAI style API Key",
@@ -245,7 +246,8 @@ namespace Onllama.OllamaBatch
                     if (tasks.Count < MaxParallel) continue;
 
                     Thread.Sleep(WaitTime == 0 ? 0 : WaitTime * 1000);
-                    Task.WaitAny(tasks.ToArray());
+                    if (WaitAll) Task.WaitAll(tasks.ToArray());
+                    else Task.WaitAny(tasks.ToArray());
                     tasks.RemoveAll(x => x.IsCompleted || x.IsCanceled || x.IsFaulted);
 
                     File.AppendAllLines(OutputFile, answers);
