@@ -245,8 +245,8 @@ namespace Onllama.OllamaBatch
                     if (tasks.Count < MaxParallel) continue;
 
                     Thread.Sleep(WaitTime == 0 ? 0 : WaitTime * 1000);
-                    Task.WaitAll(tasks.ToArray());
-                    tasks.Clear();
+                    Task.WaitAny(tasks.ToArray());
+                    tasks.RemoveAll(x => x.IsCompleted || x.IsCanceled || x.IsFaulted);
 
                     File.AppendAllLines(OutputFile, answers);
                     answers.Clear();
