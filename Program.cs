@@ -152,7 +152,9 @@ namespace Onllama.OllamaBatch
                     var chat = new ChatRequest()
                     {
                         Model = req?.body.model ?? "",
-                        Messages = req?.body.messages, Stream = false, KeepAlive = "-1s", Options = new RequestOptions()
+                        Messages = req?.body.messages, Stream = false, KeepAlive = "-1s",
+                        Options = new RequestOptions(),
+                        Think = null
                     };
 
                     if (req is {body.temperature: not null}) chat.Options.Temperature = req.body.temperature;
