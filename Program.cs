@@ -54,6 +54,25 @@ namespace Onllama.OllamaBatch
             //}
             //return;
 
+            //var jList = new List<JObject>();
+            //Parallel.ForEach(File.ReadLines("1.jsonl"), i =>
+            //{
+            //    var jArray = (JArray)JObject.Parse(i)["body"]["messages"];
+            //    var q = jArray.FirstOrDefault(x => x["role"]?.ToString() == "assistant")?["content"]?.ToString() ??
+            //            string.Empty;
+            //    var a = jArray.FirstOrDefault(x => x["role"]?.ToString() == "user")?["content"]?.ToString() ??
+            //            string.Empty;
+            //    jList.Add(new JObject
+            //    {
+            //        ["instruction"] = q,
+            //        ["input"] = "",
+            //        ["output"] = a
+            //    });
+            //});
+            //File.WriteAllText("1.json",
+            //    JArray.FromObject(jList).ToString());
+            //return;
+
             var isZh = Thread.CurrentThread.CurrentCulture.Name.Contains("zh");
 
             var cmd = new CommandLineApplication
