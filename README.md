@@ -17,6 +17,7 @@ Options:
   --timeout <minutes>      设置超时时间（分钟） / Set timeout minutes。
   --max-parallel <number>  最大并行请求数 / Set max parallel requests。
   --wait-time <seconds>    每批次请求之间的等待时间（秒） / Set wait time between batch requests (seconds)。
+
   -oai|--use-oai           使用 OpenAI 风格的 API 调用 / Use OpenAI style API call 。
   -ou|--oai-url <url>      OpenAI 风格的 API URL / Set OpenAI style API URL [https://example.com/v1/chat/completions]。
   -ok|--oai-sk <sk>        OpenAI 风格的 API 密钥 / Set OpenAI style API Key [sk-xxxx]。
