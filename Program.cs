@@ -207,15 +207,18 @@ namespace Onllama.OllamaBatch
                                         req.response.body.choices = new List<Choice>();
                                         foreach (var choice in jObj?["choices"]?.AsArray() ?? [])
                                         {
-                                            req.response.body.choices.Add(new Choice
+                                            if (!string.IsNullOrWhiteSpace(choice?["message"]?["content"].ToJsonString()))
                                             {
-                                                message = new Message(ChatRole.Assistant, choice?["message"]?["content"]?.ToString()),
-                                                finish_reason = choice?["finish_reason"]?.ToString(),
-                                                index = choice?["index"]?.GetValue<int>() ?? 0
-                                            });
+                                                req.response.body.choices.Add(new Choice
+                                                {
+                                                    message = new Message(ChatRole.Assistant, choice?["message"]?["content"]?.ToString()),
+                                                    finish_reason = choice?["finish_reason"]?.ToString(),
+                                                    index = choice?["index"]?.GetValue<int>() ?? 0
+                                                });
+                                            }
                                         }
                                     }
-                                    else
+                                    else if (!string.IsNullOrWhiteSpace(jObj?["choices"]?[0]?["message"]?["content"].ToJsonString()))
                                         req.body.messages.Add(new Message(ChatRole.Assistant,
                                             jObj?["choices"]?[0]?["message"]?["content"]?.ToString()));
 
