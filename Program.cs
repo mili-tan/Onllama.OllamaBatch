@@ -3,6 +3,7 @@ using OllamaSharp;
 using OllamaSharp.Models;
 using OllamaSharp.Models.Chat;
 using System.Collections.Concurrent;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -30,6 +31,7 @@ namespace Onllama.OllamaBatch
         public static bool NoThink = false;
         public static bool TrimThink = false;
         public static bool WaitAll = false;
+        public static WebProxy? MyWebProxy = null;
 
         static void Main(string[] args)
         {
@@ -154,6 +156,9 @@ namespace Onllama.OllamaBatch
             var waitAllOption = cmd.Option<bool>("-wa|--wait-all",
                 isZh ? "等待所有完成再请求下一批次。" : "Wait for complete before the next batch",
                 CommandOptionType.NoValue);
+            var proxyOption = cmd.Option<string>("--proxy",
+                isZh ? "设置与使用代理 [http://127.0.0.1:7890]" : "Set and use proxy [http://127.0.0.1:7890]",
+                CommandOptionType.NoValue);
 
             cmd.OnExecute(() =>
             {
@@ -173,6 +178,11 @@ namespace Onllama.OllamaBatch
                 if (oaiStyleSkOption.HasValue()) OaiStyleSK = oaiStyleSkOption.ParsedValue;
                 if (useOaiStyleOutputOption.HasValue()) UseOaiStyleOutput = useOaiStyleOutputOption.ParsedValue;
                 if (waitAllOption.HasValue()) WaitAll = waitAllOption.ParsedValue;
+                if (proxyOption.HasValue())
+                {
+                    MyWebProxy = new WebProxy(proxyOption.ParsedValue);
+                    httpClient = new HttpClient(new HttpClientHandler() {Proxy = MyWebProxy, UseProxy = true});
+                }
 
                 var lines = File.ReadLines(InputFile);
                 var tasks = new List<Task>();
@@ -216,12 +226,19 @@ namespace Onllama.OllamaBatch
                         {
                             if (UseOaiStyleApi)
                             {
-                                using var httpClient = new HttpClient() { Timeout = TimeSpan.FromMinutes(5) };
+                                using var handler = new HttpClientHandler();
+                                if (MyWebProxy != null)
+                                {
+                                    handler.Proxy = MyWebProxy;
+                                    handler.UseProxy = true;
+                                }
+
+                                using var oaiClient = new HttpClient(handler) {Timeout = TimeSpan.FromMinutes(5)};
                                 using var request = new HttpRequestMessage(new HttpMethod("POST"), OaiStyleUrl);
                                 request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + OaiStyleSK);
                                 request.Content = new StringContent(JsonSerializer.Serialize(req.body));
                                 request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
-                                var response = await httpClient.SendAsync(request);
+                                var response = await oaiClient.SendAsync(request);
                                 if (response.IsSuccessStatusCode)
                                 {
                                     var jObj = JsonNode.Parse((await response.Content.ReadAsStringAsync()).Trim());
