@@ -34,6 +34,31 @@ namespace Onllama.OllamaBatch
         static void Main(string[] args)
         {
 
+            //var count = 1;
+            //foreach (var line in File.ReadLines(""))
+            //{
+            //    var requestData = new
+            //    {
+            //        custom_id = $"request-{count}",
+            //        method = "POST",
+            //        url = "/v1/chat/completions",
+            //        body = new
+            //        {
+            //            model = "MiniMax-M2",
+            //            messages = new object[]
+            //            {
+            //                new { role = "system", content = "你是一个学术写作者。请重写润色输入，禁止改变原意、解释、Markdown" },
+            //                new { role = "user", content = line.Split("\t")[1] }
+            //            }
+            //        }
+            //    };
+            //    string jsonLine = JsonConvert.SerializeObject(requestData, Formatting.None) + "\r\n";
+            //    // 写入文件
+            //    File.AppendAllText("2.jsonl", jsonLine);
+            //    count++;
+            //}
+            //return;
+
             //var from = 165000;
             //var to = 166500;
             //var now = 0;
