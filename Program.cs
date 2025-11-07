@@ -143,7 +143,7 @@ namespace Onllama.OllamaBatch
                 isZh ? "使用 OpenAI 风格的 API 调用。" : "Use OpenAI style API call",
                 CommandOptionType.NoValue);
             var oaiStyleUrlOption = cmd.Option<string>("-ou|--oai-url <url>",
-                isZh ? "OpenAI 风格的 API URL。" : "Set OpenAI style API URL [https://example.com/v1/chat/completions]",
+                isZh ? "OpenAI 风格的 API URL。 [https://example.com/v1/chat/completions]" : "Set OpenAI style API URL [https://example.com/v1/chat/completions]",
                 CommandOptionType.SingleValue);
             var oaiStyleSkOption = cmd.Option<string>("-ok|--oai-sk <sk>",
                 isZh ? "OpenAI 风格的 API 密钥。" : "Set OpenAI style API Key",
@@ -232,15 +232,18 @@ namespace Onllama.OllamaBatch
                                         req.response.body.choices = new List<Choice>();
                                         foreach (var choice in jObj?["choices"]?.AsArray() ?? [])
                                         {
-                                            req.response.body.choices.Add(new Choice
+                                            if (!string.IsNullOrWhiteSpace(choice?["message"]?["content"].ToJsonString()))
                                             {
-                                                message = new Message(ChatRole.Assistant, choice?["message"]?["content"]?.ToString()),
-                                                finish_reason = choice?["finish_reason"]?.ToString(),
-                                                index = choice?["index"]?.GetValue<int>() ?? 0
-                                            });
+                                                req.response.body.choices.Add(new Choice
+                                                {
+                                                    message = new Message(ChatRole.Assistant, choice?["message"]?["content"]?.ToString()),
+                                                    finish_reason = choice?["finish_reason"]?.ToString(),
+                                                    index = choice?["index"]?.GetValue<int>() ?? 0
+                                                });
+                                            }
                                         }
                                     }
-                                    else
+                                    else if (!string.IsNullOrWhiteSpace(jObj?["choices"]?[0]?["message"]?["content"].ToJsonString()))
                                         req.body.messages.Add(new Message(ChatRole.Assistant,
                                             jObj?["choices"]?[0]?["message"]?["content"]?.ToString()));
 
