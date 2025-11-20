@@ -200,7 +200,7 @@ namespace Onllama.OllamaBatch
                     var req = JsonSerializer.Deserialize<Req>(line);
                     Console.WriteLine("Q:" + req?.custom_id);
                     if (req is {custom_id: not null} && long.Parse(req.custom_id.Split('-').Last()) <= Skip) continue;
-                    if (NoThink) req?.body.messages.Insert(0, new Message(ChatRole.System, "/no_think"));
+                    //if (NoThink) req?.body.messages.Insert(0, new Message(ChatRole.System, "/no_think"));
                     if (!string.IsNullOrWhiteSpace(ModelName)) req.body.model = ModelName;
 
                     var chat = new ChatRequest()
@@ -208,7 +208,7 @@ namespace Onllama.OllamaBatch
                         Model = req?.body.model ?? "",
                         Messages = req?.body.messages, Stream = false, KeepAlive = "-1s",
                         Options = new RequestOptions(),
-                        Think = null
+                        Think = NoThink ? false : null
                     };
 
                     if (req is {body.temperature: not null}) chat.Options.Temperature = req.body.temperature;
