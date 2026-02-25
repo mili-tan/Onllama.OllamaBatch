@@ -209,6 +209,7 @@ namespace Onllama.OllamaBatch
                                 else
                                 {
                                     Console.WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+                                    Console.WriteLine(response.Content.ReadAsStringAsync().Result);
                                 }
                             }
                             else
