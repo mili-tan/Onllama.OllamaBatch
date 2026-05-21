@@ -28,6 +28,7 @@ namespace Onllama.OllamaBatch
         public static int Skip = 0;
         public static int MaxParallel = 8;
         public static int WaitTime = 0;
+        public static int Takes = 0;
         public static bool NoThink = false;
         public static bool TrimThink = false;
         public static bool WaitAll = false;
@@ -123,7 +124,7 @@ namespace Onllama.OllamaBatch
                 var tasks = new List<Task>();
                 var answers = new ConcurrentBag<string>();
 
-                foreach (var line in lines)
+                foreach (var line in Takes == 0 ? lines : lines.Take(Takes))
                 {
                     //if (DateTime.Now.Hour == 8)
                     //{
