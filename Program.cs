@@ -30,6 +30,7 @@ namespace Onllama.OllamaBatch
         public static int WaitTime = 0;
         public static int Takes = 0;
         public static bool NoThink = false;
+        public static string ThinkEffort = "";
         public static bool TrimThink = false;
         public static bool WaitAll = false;
         public static WebProxy? MyWebProxy = null;
@@ -98,6 +99,9 @@ namespace Onllama.OllamaBatch
             var takesOption = cmd.Option<int>("--takes <number>",
                 isZh ? "限制处理的请求数量。" : "Limit the number of requests to process",
                 CommandOptionType.SingleValue);
+            var thinkEffortOption = cmd.Option<string>("-tf|--think-effort <level>",
+                isZh ? "设置思考努力程度（low, medium, high）。" : "Set think effort level (low, medium, high)",
+                CommandOptionType.SingleValue);
 
             cmd.OnExecute(() =>
             {
@@ -118,6 +122,7 @@ namespace Onllama.OllamaBatch
                 if (useOaiStyleOutputOption.HasValue()) UseOaiStyleOutput = useOaiStyleOutputOption.ParsedValue;
                 if (waitAllOption.HasValue()) WaitAll = waitAllOption.ParsedValue;
                 if (takesOption.HasValue()) Takes = takesOption.ParsedValue;
+                if (thinkEffortOption.HasValue()) ThinkEffort = takesOption.ParsedValue.ToString().ToLower();
 
                 if (proxyOption.HasValue())
                 {
@@ -167,6 +172,9 @@ namespace Onllama.OllamaBatch
                         {
                             if (UseOaiStyleApi)
                             {
+                                if (NoThink) req.body.thinking = new { type = "disable" };
+                                if (!string.IsNullOrWhiteSpace(ThinkEffort)) req.body.reasoning_effort = ThinkEffort;
+
                                 using var handler = new HttpClientHandler();
                                 if (MyWebProxy != null)
                                 {
@@ -295,6 +303,12 @@ namespace Onllama.OllamaBatch
 
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public List<Choice> choices { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public string reasoning_effort { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public object thinking { get; set; }
         }
 
         public class Req
