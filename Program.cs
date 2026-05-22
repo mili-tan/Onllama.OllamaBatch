@@ -95,6 +95,9 @@ namespace Onllama.OllamaBatch
             var proxyOption = cmd.Option<string>("--proxy",
                 isZh ? "设置与使用代理 [http://127.0.0.1:7890]" : "Set and use proxy [http://127.0.0.1:7890]",
                 CommandOptionType.NoValue);
+            var takesOption = cmd.Option<int>("--takes <number>",
+                isZh ? "限制处理的请求数量。" : "Limit the number of requests to process",
+                CommandOptionType.SingleValue);
 
             cmd.OnExecute(() =>
             {
@@ -114,6 +117,8 @@ namespace Onllama.OllamaBatch
                 if (oaiStyleSkOption.HasValue()) OaiStyleSK = oaiStyleSkOption.ParsedValue;
                 if (useOaiStyleOutputOption.HasValue()) UseOaiStyleOutput = useOaiStyleOutputOption.ParsedValue;
                 if (waitAllOption.HasValue()) WaitAll = waitAllOption.ParsedValue;
+                if (takesOption.HasValue()) Takes = takesOption.ParsedValue;
+
                 if (proxyOption.HasValue())
                 {
                     MyWebProxy = new WebProxy(proxyOption.ParsedValue);
