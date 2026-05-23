@@ -154,7 +154,7 @@ namespace Onllama.OllamaBatch
                         Model = req?.body.model ?? "",
                         Messages = req?.body.messages, Stream = false, KeepAlive = "-1s",
                         Options = new RequestOptions(),
-                        Think = NoThink ? false : null
+                        Think = NoThink ? false : !string.IsNullOrWhiteSpace(ThinkEffort) ? ThinkEffort : null
                     };
 
                     if (req is {body.temperature: not null}) chat.Options.Temperature = req.body.temperature;
